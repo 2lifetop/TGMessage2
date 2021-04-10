@@ -9,4 +9,8 @@ if ($message === '/token') {
     $chat_id = $data['message']['chat']['id'];
     $bot->sendMessage(['text' => $bot->encryption($chat_id), 'chat_id' => $chat_id]);
 }
+if ($message === '/usage') {
+    $chat_id = $data['message']['chat']['id'];
+    $bot->sendMessage(['text' => "使用方法：https://tgbot-red.vercel.app/api?token=TG获取的token&message=你要发送的消息", 'chat_id' => $chat_id]);
+}
 echo json_encode(['code' => 200, 'message' => 'success']);
