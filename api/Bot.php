@@ -41,6 +41,14 @@ class Bot
 
     public function sendMessage($data): array
     {
+        // 添加parse_mode参数以支持Markdown
+        $data['parse_mode'] = 'MarkdownV2';
+        
+        // 如果消息中包含Markdown特殊字符，需要进行转义
+        if (isset($data['text'])) {
+            $data['text'] = $this->escapeMarkdown($data['text']);
+        }
+        
         return $this->request('sendMessage', $data);
     }
 
@@ -77,5 +85,15 @@ class Bot
     {
         $this->token = $token;
         return $this;
+    }
+
+    // 添加新方法用于转义Markdown特殊字符
+    private function escapeMarkdown(string $text): string
+    {
+        $specialChars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+        foreach ($specialChars as $char) {
+            $text = str_replace($char, '\\' . $char, $text);
+        }
+        return $text;
     }
 }
