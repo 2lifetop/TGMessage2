@@ -70,9 +70,7 @@ export class TelegramClient {
         const msg = message as TextMessage;
         return this.request('sendMessage', {
           ...commonParams,
-          text: msg.type === MessageType.MARKDOWN
-            ? this.escapeMarkdown(msg.message)
-            : msg.message,
+          text: msg.message,
           parse_mode: msg.parse_mode ?? (msg.type === MessageType.MARKDOWN ? 'MarkdownV2' : undefined),
         });
       }
