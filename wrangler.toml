@@ -1,0 +1,19 @@
+name = "tgmessage-worker"
+main = "dist/index.js"
+compatibility_date = "2024-02-08"
+compatibility_flags = ["nodejs_compat"]
+
+# 环境变量（开发环境）
+[vars]
+# BOT_TOKEN = "your-bot-token-from-botfather"
+# SECRET_KEY = "your-secret-key-for-encryption"
+
+# KV 命名空间绑定（用于存储用户信息）
+[[kv_namespaces]]
+binding = "KV"
+id = "your-kv-namespace-id"
+
+# 路由配置（可选）
+# [[routes]]
+# pattern = "your-domain.com/*"
+# custom_domain = true

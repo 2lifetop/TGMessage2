@@ -1,0 +1,30 @@
+{
+  "name": "tgmessage-worker",
+  "version": "2.0.0",
+  "description": "Telegram Message Bot for Cloudflare Worker",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "esbuild src/index.ts --bundle --outfile=dist/index.js --format=esm --platform=neutral",
+    "build:watch": "esbuild src/index.ts --bundle --outfile=dist/index.js --format=esm --platform=neutral --watch",
+    "lint": "tsc --noEmit",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "cloudflare-worker",
+    "message"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2",
+    "wrangler": "^3.25.0"
+  }
+}
