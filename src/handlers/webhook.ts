@@ -302,15 +302,3 @@ async function handleCallbackQuery(
     console.log('Callback data:', callbackQuery.data);
   }
 }
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      callback_query_id: callbackQuery.id,
-    }),
-  });
-
-  // 可以在这里处理按钮点击逻辑
-  if (callbackQuery.data) {
-    console.log('Callback data:', callbackQuery.data);
-  }
-}
