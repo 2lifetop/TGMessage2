@@ -5,13 +5,14 @@ compatibility_flags = ["nodejs_compat"]
 
 # 环境变量（开发环境）
 [vars]
-# BOT_TOKEN = "your-bot-token-from-botfather"
-# SECRET_KEY = "your-secret-key-for-encryption"
+BOT_TOKEN = "8538757862:AAFjLlANf51DEJSyBQ13QlElcvXhrtJxfXY"
+SECRET_KEY = "hq-XLff0pl8QYt9tA-XVhz9X90LwQcJma-JmORiv-rU"
 
 # KV 命名空间绑定（用于存储用户信息）
+# 先注释掉，创建 KV 后再启用
 [[kv_namespaces]]
-binding = "KV"
-id = "your-kv-namespace-id"
+ binding = "KV"
+id = "85b1f320a1e5497e940ab9ff7d6ddec3"
 
 # 路由配置（可选）
 # [[routes]]
