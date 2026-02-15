@@ -341,6 +341,27 @@ GET /setup?key=<span class="string">SECRET_KEY</span>&url=<span class="string">h
     </div>
 
     <div class="section">
+      <h2>🧪 快速测试</h2>
+      <p>下载测试脚本，一键测试所有消息类型：</p>
+      <div style="display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap;">
+        <a href="https://github.com/2lifetop/TGMessage2/raw/cloudflare-worker/test.sh" download style="display: inline-flex; align-items: center; gap: 8px; background: #4caf50; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+          📥 下载 Bash 测试脚本 (Linux/Mac)
+        </a>
+        <a href="https://github.com/2lifetop/TGMessage2/raw/cloudflare-worker/test.ps1" download style="display: inline-flex; align-items: center; gap: 8px; background: #2196f3; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+          📥 下载 PowerShell 测试脚本 (Windows)
+        </a>
+      </div>
+      <div class="code-block">
+<span class="comment"># 使用 Bash 脚本 (Linux/Mac)</span>
+chmod +x test.sh
+./test.sh YOUR_TOKEN
+
+<span class="comment"># 使用 PowerShell 脚本 (Windows)</span>
+.\test.ps1 -Token <span class="string">"YOUR_TOKEN"</span>
+      </div>
+    </div>
+
+    <div class="section">
       <h2>🤖 使用步骤</h2>
       <div class="code-block">
 <span class="comment">// 1. 在 Telegram 中向 Bot 发送 /start</span>

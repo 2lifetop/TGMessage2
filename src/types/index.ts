@@ -126,6 +126,7 @@ export interface InlineKeyboardButton {
   url?: string;
   callback_data?: string;
   web_app?: { url: string };
+  copy_text?: { text: string };
 }
 
 export interface InlineKeyboardMarkup {
@@ -150,6 +151,10 @@ export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data?: T;
+  example?: {
+    curl: string;
+    description: string;
+  };
 }
 
 // Telegram API 响应

@@ -56,7 +56,7 @@ export async function handleWebhookRequest(
 
     // 处理回调查询
     if (update.callback_query) {
-      await handleCallbackQuery(telegram, update.callback_query);
+      await handleCallbackQuery(telegram, update.callback_query, env);
     }
 
     return new Response(JSON.stringify({ code: 200, message: 'success' }), {
@@ -105,48 +105,81 @@ async function handleStart(telegram: TelegramClient, chatId: string): Promise<vo
 }
 
 /**
- * 处理 /token 命令
+ * 处理 /token 命令 - 生成新 Token（覆盖旧的）
  */
 async function handleToken(telegram: TelegramClient, chatId: string, env: Env): Promise<void> {
   try {
-    const token = await cryptoUtils.encrypt(chatId, env.SECRET_KEY);
+    // 检查是否已有 Token
+    const existingToken = await env.KV.get(`user:${chatId}`);
 
-    const message = `🔑 *您的 API Token*
+    if (existingToken) {
+      // 已有 Token，显示确认按钮
+      await telegram.sendMessage({
+        type: 'markdown',
+        chat_id: chatId,
+        message: `⚠️ *您已有一个有效的 Token*
 
-\`${token}\`
+重新生成将导致旧 Token 立即失效。
 
-*如何使用？*
-1\. 复制上面的 Token
-2\. 通过 HTTP 请求发送消息：
-
-\`GET\` \`https://your-domain/api?token=YOUR_TOKEN&message=你好世界\`
-
-或使用 POST：
-\`POST\` \`https://your-domain/api\`
-\`Content-Type: application/json\`
-
-\`\`\`json
-{
-  "token": "YOUR_TOKEN",
-  "type": "text",
-  "message": "你好世界"
-}
-\`\`\`
-
-⚠️ *请妥善保管您的 Token，不要分享给他人！*`;
-
-    await telegram.sendMessage({
-      type: 'markdown',
-      chat_id: chatId,
-      message: message,
-    });
+*确定要重新生成吗？*`,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '✅ 确认重新生成', callback_data: 'confirm_new_token' },
+              { text: '❌ 取消', callback_data: 'cancel_new_token' }
+            ],
+            [
+              { text: '👁️ 查看现有 Token', callback_data: 'view_existing_token' }
+            ]
+          ]
+        }
+      });
+    } else {
+      // 没有 Token，直接生成
+      await generateAndSendToken(telegram, chatId, env, false);
+    }
   } catch (error) {
+    console.error('Generate token error:', error);
     await telegram.sendMessage({
       type: 'text',
       chat_id: chatId,
       message: '生成 Token 失败，请稍后重试',
     });
   }
+}
+
+async function generateAndSendToken(
+  telegram: TelegramClient,
+  chatId: string,
+  env: Env,
+  isUpdate: boolean
+): Promise<void> {
+  // 生成新 Token
+  const token = await cryptoUtils.encrypt(chatId, env.SECRET_KEY);
+
+  // 存储新 Token 到 KV（覆盖旧的）
+  await env.KV.put(`user:${chatId}`, token);
+
+  const message = isUpdate
+    ? `🔄 *Token 已更新*\n\n旧的 Token 已失效，请使用新的 Token：\n\n点击 👇 下方按钮一键复制`
+    : `🔑 *您的 API Token*\n\n点击 👇 下方按钮一键复制\n\n⚠️ *请妥善保管，不要分享给他人！*`;
+
+  // 发送消息，附带复制按钮
+  await telegram.request('sendMessage', {
+    chat_id: chatId,
+    text: message,
+    parse_mode: 'MarkdownV2',
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: '📋 点击复制 Token',
+            copy_text: { text: token }
+          }
+        ]
+      ]
+    }
+  });
 }
 
 /**
@@ -285,32 +318,114 @@ async function handleInfo(
  */
 async function handleCallbackQuery(
   telegram: TelegramClient,
-  callbackQuery: { id: string; data?: string; from: { id: number } }
+  callbackQuery: { id: string; data?: string; from: { id: number } ; message?: { chat: { id: number }; message_id: number } },
+  env: Env
 ): Promise<void> {
-  // 回答回调查询（消除加载状态）
-  // 这里我们直接使用 telegram 实例的 request 方法
+  const chatId = callbackQuery.from.id.toString();
+
+  // 处理 Token 生成确认
+  if (callbackQuery.data === 'confirm_new_token') {
+    // 回答回调查询
+    try {
+      await telegram.request('answerCallbackQuery', {
+        callback_query_id: callbackQuery.id,
+        text: '正在生成新 Token...',
+      });
+    } catch (error) {
+      console.error('Failed to answer callback query:', error);
+    }
+
+    // 生成新 Token
+    await generateAndSendToken(telegram, chatId, env, true);
+
+    // 删除原消息（带有按钮的确认消息）
+    if (callbackQuery.message) {
+      try {
+        await telegram.request('deleteMessage', {
+          chat_id: chatId,
+          message_id: callbackQuery.message.message_id,
+        });
+      } catch (error) {
+        console.error('Failed to delete message:', error);
+      }
+    }
+    return;
+  }
+
+  // 处理查看现有 Token
+  if (callbackQuery.data === 'view_existing_token') {
+    try {
+      await telegram.request('answerCallbackQuery', {
+        callback_query_id: callbackQuery.id,
+        text: '正在获取 Token...',
+      });
+    } catch (error) {
+      console.error('Failed to answer callback query:', error);
+    }
+
+    // 从 KV 获取现有 Token
+    const existingToken = await env.KV.get(`user:${chatId}`);
+    if (existingToken) {
+      // 使用 copy_text 按钮让用户一键复制
+      await telegram.request('sendMessage', {
+        chat_id: chatId,
+        text: '🔑 *您当前的 API Token*\n\n点击 👇 下方按钮一键复制\n\n⚠️ *请妥善保管，不要分享给他人！*',
+        parse_mode: 'MarkdownV2',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '📋 点击复制 Token',
+                copy_text: { text: existingToken }
+              }
+            ]
+          ]
+        }
+      });
+    } else {
+      await telegram.sendMessage({
+        type: 'text',
+        chat_id: chatId,
+        message: '没有找到现有 Token，请发送 /token 生成新 Token',
+      });
+    }
+    return;
+  }
+
+  // 处理取消
+  if (callbackQuery.data === 'cancel_new_token') {
+    // 回答回调查询
+    try {
+      await telegram.request('answerCallbackQuery', {
+        callback_query_id: callbackQuery.id,
+        text: '已取消',
+      });
+    } catch (error) {
+      console.error('Failed to answer callback query:', error);
+    }
+
+    // 编辑原消息，显示已取消
+    if (callbackQuery.message) {
+      try {
+        await telegram.request('editMessageText', {
+          chat_id: chatId,
+          message_id: callbackQuery.message.message_id,
+          text: '❌ 已取消重新生成 Token',
+          parse_mode: 'MarkdownV2',
+        });
+      } catch (error) {
+        console.error('Failed to edit message:', error);
+      }
+    }
+    return;
+  }
+
+  // 其他回调查询
   try {
     await telegram.request('answerCallbackQuery', {
       callback_query_id: callbackQuery.id,
     });
   } catch (error) {
     console.error('Failed to answer callback query:', error);
-  }
-
-  // 可以在这里处理按钮点击逻辑
-  if (callbackQuery.data) {
-    console.log('Callback data:', callbackQuery.data);
-  }
-}
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      callback_query_id: callbackQuery.id,
-    }),
-  });
-
-  // 可以在这里处理按钮点击逻辑
-  if (callbackQuery.data) {
-    console.log('Callback data:', callbackQuery.data);
   }
 }
